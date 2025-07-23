@@ -1,0 +1,28 @@
+﻿@page "/"
+@page "/news"
+@page "/news/{language?}"
+@page "/news/{language?}/{pageNumber:int?}"
+@inject IConfiguration Configuration
+
+
+<ArtikelNews Language="@language" PageNumber="@pageNumber"  ItemsOnPage="itemsOnPage"/>
+
+@code {
+   
+    [Parameter]
+    public string? language { get; set; }
+
+    [Parameter]
+    public int? pageNumber { get; set; } 
+
+   
+    private int itemsOnPage { get; set; }
+
+    protected override void OnInitialized()
+    {
+      if (!pageNumber.HasValue)
+             pageNumber = 1; 
+        
+        itemsOnPage = Configuration.GetValue<int>("NewsSettings:ItemsOnPage", 6);
+    }
+}

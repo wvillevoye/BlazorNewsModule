@@ -1,0 +1,23 @@
+﻿@page "/admin/news/add"
+@page "/admin/news/edit/{Id:int}"
+
+@inject IConfiguration Configuration
+
+
+
+<NieuwsArtikelForm Id="id" QuillEditorEnabled=quillEditorEnabled TinyMceEditorEnabled=tinyMceEditorEnabled />
+
+@code {
+    [Parameter]
+    public int id { get; set; }  
+    private bool tinyMceEditorEnabled = false;
+    private bool quillEditorEnabled = true;
+
+    protected override void OnInitialized()
+    {
+        tinyMceEditorEnabled = Configuration.GetValue<bool>("Editors:TinyMceEditorEnabled");
+        quillEditorEnabled = Configuration.GetValue<bool>("Editors:QuillEditorEnabled");
+
+    }
+   
+}

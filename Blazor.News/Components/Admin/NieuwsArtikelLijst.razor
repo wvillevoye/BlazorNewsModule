@@ -1,0 +1,84 @@
+﻿@page "/admin/newslist"
+
+@inject INieuwsService NieuwsService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime 
+@using System.Globalization
+@using Blazor.News.DATA.ModelsDTO
+
+@using Blazor.News.Services
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+
+<PageTitle>Nieuwsartikelen Beheren</PageTitle>
+
+<div class="container-fluid my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Nieuwsartikelen Beheren</h1>
+        <a href="/admin/news/add" class="btn btn-primary">Nieuw Artikel Toevoegen</a>
+    </div>
+
+    @if (artikelen == null)
+    {
+        <p><em>Artikelen laden...</em></p>
+    }
+    else if (!artikelen.Any())
+    {
+        <div class="alert alert-info" role="alert">
+            Geen nieuwsartikelen gevonden.
+        </div>
+    }
+    else
+    {
+        <table class="table table-striped table-hover shadow-sm rounded-3 overflow-hidden">
+            <thead class="bg-light">
+                <tr>
+                    <th>Titel (NL)</th>
+                    <th>Auteur</th>
+                    <th>Categorie</th>
+                    <th>Publicatie Datum</th>
+                    <th class="text-center">Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var artikel in artikelen)
+                {
+                    <tr>
+                        <td>@artikel.Titel</td>  
+                        <td>@artikel.Auteur</td>
+                        <td>@artikel.CategorieNaam</td>
+                        <td>@artikel.PublicatieDatumTijd.ToString("dd-MM-yyyy")</td>
+                        <td class="text-center">
+                            <a href="/admin/news/edit/@artikel.Id" class="btn btn-sm btn-info me-2"><i class="bi bi-pencil-square"></i></a>
+                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(artikel.Id, artikel.Titel)"><i class="bi bi-trash3-fill"></i></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private IEnumerable<NieuwsArtikelDto>? artikelen;
+    private string adminLanguage = "nl"; // Admin taal kan ook via een user setting komen
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Haal alle artikelen op voor het admin overzicht, paginering niet nodig hier
+        // We gebruiken hier de NL taal voor de titel en categorie
+        artikelen = (await NieuwsService.GetNieuwsArtikelenPagedAsync(adminLanguage, 1, int.MaxValue)).Items;
+    }
+
+    private async Task ConfirmDelete(int artikelId, string? artikelTitel)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Weet je zeker dat je \"{artikelTitel}\" wilt verwijderen?");
+        if (confirmed)
+        {
+            await NieuwsService.DeleteNieuwsArtikelAsync(artikelId);
+            // Herlaad de lijst na verwijdering
+            artikelen = (await NieuwsService.GetNieuwsArtikelenPagedAsync(adminLanguage, 1, int.MaxValue)).Items;
+            StateHasChanged(); // Forceer herrenderen
+        }
+    }
+}

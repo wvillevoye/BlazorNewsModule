@@ -1,0 +1,5 @@
+﻿.blog-card-img {
+    width: 100%;
+    height: 150px; /* Vaste hoogte voor afbeeldingen in kaarten */
+    object-fit: cover; /* Zorgt ervoor dat de afbeelding de ruimte vult zonder vervorming */
+}

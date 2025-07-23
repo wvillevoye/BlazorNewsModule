@@ -1,0 +1,55 @@
+﻿@* Bootstrap 5 switch voor taalwissel *@
+<div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" id="languageSwitch"
+           checked="@(CurrentLanguage == "en")"
+           @onchange="@ToggleLanguage" />
+    <label class="form-check-label d-flex align-items-center" for="languageSwitch">
+        <img src="@GetFlagSvgPath()" alt="Language Flag" style="width:1.75rem" />
+    </label>
+</div>
+
+@code {
+    [Parameter]
+    public string CurrentLanguage { get; set; } = "en";
+
+    [Parameter]
+    public EventCallback<string> OnLanguageChanged { get; set; }
+
+    private string Voluit => CurrentLanguage == "nl" ? "English" : "Nederlands";
+
+    private string GetFlagSvgPath()
+    {
+        const string rclName = "Blazor.News";
+        return CurrentLanguage == "nl"
+            ? $"_content/{rclName}/SVG/NL.svg"
+            : $"_content/{rclName}/SVG/EN.svg";
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine($"LanguageSwitcher: OnParametersSet - CurrentLanguage: {CurrentLanguage}, Voluit: {Voluit}");
+        base.OnParametersSet();
+    }
+
+    private async Task ToggleLanguage(ChangeEventArgs changeEventArgs)
+    {
+        Console.WriteLine("LanguageSwitcher: ToggleLanguage IS BEING CALLED!");
+
+        string newLanguage = (bool)changeEventArgs.Value! ? "en" : "nl";
+
+        // --- DEZE TWEE REGELS ZIJN CRUCIAAL VOOR DE LANGUAGE SWITCHER ZELF ---
+        // 1. Update de interne CurrentLanguage van deze component
+        CurrentLanguage = newLanguage;
+
+        // 2. Vertel Blazor dat de staat is veranderd en dat deze component opnieuw moet renderen
+        StateHasChanged();
+        // -------------------------------------------------------------------
+
+        Console.WriteLine($"LanguageSwitcher: Internal state updated to {CurrentLanguage}. Invoking OnLanguageChanged.");
+
+        // Roep de EventCallback aan om de parent te informeren
+        await OnLanguageChanged.InvokeAsync(newLanguage);
+
+        Console.WriteLine("LanguageSwitcher: OnLanguageChanged invoked successfully.");
+    }
+}

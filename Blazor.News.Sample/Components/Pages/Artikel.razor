@@ -1,0 +1,14 @@
+﻿@page "/artikel/{Id:int}/{language?}"
+@rendermode InteractiveServer
+@using Blazor.News.Components
+<ArtikelDetail Language="@Language" Id="@Id"/>
+
+
+@code{
+   [Parameter]
+    public int Id { get; set; }
+    [Parameter]
+    public string? Language { get; set; }
+     
+
+}

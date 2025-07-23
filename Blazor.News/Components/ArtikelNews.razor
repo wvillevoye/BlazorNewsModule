@@ -1,0 +1,155 @@
+﻿@page "/news"
+@page "/news/{language?}"
+@page "/news/{language?}/{pageNumber:int?}"
+
+@inject INieuwsService NieuwsService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<PageTitle>@GetCurrentCultureString("Laatste Nieuws", "Latest News")</PageTitle>
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">@GetCurrentCultureString("Laatste Nieuws", "Latest News")</h2>
+        <div class="d-flex align-items-center">
+            <LanguageSwitcher CurrentLanguage="@CurrentLanguage" OnLanguageChanged="@HandleLanguageChanged" />
+        </div>
+    </div>
+
+    @if (pagedResult == null)
+    {
+        <p><em>@GetCurrentCultureString("Laden van nieuwsartikelen...", "Loading news articles...")</em></p>
+    }
+    else if (!pagedResult.Items.Any())
+    {
+        <p>@GetCurrentCultureString("Geen nieuwsartikelen gevonden.", "No news articles found.")</p>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 gy-5 gx-4">
+            @foreach (var artikel in pagedResult.Items)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-1">
+                        <a href="/artikel/@artikel.Id">
+                            <img src="@artikel.HoofdafbeeldingUrl" class="card-img-top blog-card-img"
+                                 alt="@(string.IsNullOrEmpty(artikel.Titel) ? "Afbeelding" : artikel.Titel)">
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title mb-2">
+                                <a href="/artikel/@artikel.Id/@Language" class="text-decoration-none text-dark stretched-link">
+                                    @artikel.Titel
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted mb-2">
+                                @(artikel.Ondertitel ?? (artikel.Inhoud != null && artikel.Inhoud.Length > 150 ? artikel.Inhoud.Substring(0, 150) + "..." : artikel.Inhoud))
+                            </p>
+                            <small class="text-muted mt-auto">
+                                @(GetCurrentCultureString("Door", "By")) @artikel.Auteur @(GetCurrentCultureString("op", "on")) @artikel.PublicatieDatumTijd.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                                @if (!string.IsNullOrEmpty(artikel.CategorieNaam))
+                                {
+                                    <span class="badge bg-secondary ms-2">@artikel.CategorieNaam</span>
+                                }
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <nav aria-label="Nieuws paginering" class="mt-5">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(pagedResult?.HasPreviousPage == false ? "disabled" : "")">
+                <a class="page-link" href="/news/@CurrentLanguage/@(CurrentPage - 1)">@GetCurrentCultureString("Vorige", "Previous")</a>
+            </li>
+
+            @for (int i = 1; i <= (pagedResult?.TotalPages ?? 1); i++)
+            {
+                <li class="page-item @(i == CurrentPage ? "active" : "")">
+                    <a class="page-link" href="/news/@CurrentLanguage/@i">@i</a>
+                </li>
+            }
+
+            <li class="page-item @(pagedResult?.HasNextPage == false ? "disabled" : "")">
+                <a class="page-link" href="/news/@CurrentLanguage/@(CurrentPage + 1)">@GetCurrentCultureString("Volgende", "Next")</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+@code {
+    [Parameter]
+    public string? Language { get; set; }
+
+    [Parameter]
+    public int? PageNumber { get; set; }
+
+    
+    /// <summary>
+    /// Het aantal nieuwsartikelen dat per pagina moet worden weergegeven.
+    /// De standaardwaarde is 6, maar kan worden overschreven via de configuratie (e.g., appsettings.json)
+    /// onder de sleutel "NewsSettings:ItemsOnPage".
+    /// </summary>
+    [Parameter]
+    public int ItemsOnPage { get; set; } = 6;
+
+
+    private PagedResult<NieuwsArtikelDto>? pagedResult;
+    private string CurrentLanguage { get; set; } = "nl";
+    private int CurrentPage { get; set; } = 1;
+    //private const int PageSize = 6;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Bepaal de huidige taal
+        CurrentLanguage = !string.IsNullOrEmpty(Language) && (Language.ToLower() == "en" || Language.ToLower() == "nl")
+                                ? Language.ToLower()
+                                : "nl";
+
+        // Bepaal de huidige pagina
+        CurrentPage = PageNumber ?? 1;
+        if (CurrentPage < 1) CurrentPage = 1;
+
+        // Stel de cultuur in voor datumweergave in de UI
+        CultureInfo.CurrentUICulture = new CultureInfo(CurrentLanguage);
+
+        // Roep de service aan met pagineringsparameters
+        pagedResult = await NieuwsService.GetNieuwsArtikelenPagedAsync(CurrentLanguage, CurrentPage, ItemsOnPage);
+
+        // Zorg ervoor dat de huidige pagina niet groter is dan het totale aantal pagina's
+        if (pagedResult.TotalPages > 0 && CurrentPage > pagedResult.TotalPages)
+        {
+            CurrentPage = pagedResult.TotalPages;
+            // Je kunt hier ook navigeren naar de laatste pagina:
+            // NavigationManager.NavigateTo($"/news/{CurrentLanguage}/{CurrentPage}");
+        }
+    }
+
+    private string GetCurrentCultureString(string nlString, string enString)
+    {
+        return CurrentLanguage == "en" ? enString : nlString;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string target = "_blank";
+            await JSRuntime.InvokeVoidAsync("initializeDiscoverySearch", target);
+        }
+    }
+
+    private string GetLanguageFullName(string langCode)
+    {
+        return langCode == "nl" ? "Nederlands" : "English";
+    }
+
+    private void HandleLanguageChanged(string newLanguage)
+    {
+        
+        Language = newLanguage;
+        StateHasChanged();
+        NavigationManager.NavigateTo($"/news/{newLanguage}/{CurrentPage}", forceLoad: false); // forceLoad: false om Blazor's interne router te gebruiken
+    }
+}

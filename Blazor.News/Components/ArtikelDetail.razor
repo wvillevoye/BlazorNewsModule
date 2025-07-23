@@ -1,0 +1,203 @@
+﻿@page "/artikel/{Id:int}/{language?}"
+@inject INieuwsService NieuwsService
+
+<PageTitle>@artikel?.Titel</PageTitle>
+
+@if (artikel == null)
+{
+    <div class="text-center mt-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3"><em>@GetCurrentCultureString("Laden van artikel...", "Loading article...")</em></p>
+    </div>
+}
+else
+{
+    <div class="container-xl my-5 article-wrapper">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/news/@CurrentLanguage">@GetCurrentCultureString("Nieuws", "News")</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@artikel.Titel</li>
+            </ol>
+        </nav>
+
+        <article class="article-detail">
+            <!-- Hero Header -->
+            <div class="position-relative mb-5 rounded shadow overflow-hidden bg-dark text-white hero-header">
+                @if (!string.IsNullOrEmpty(artikel.HoofdafbeeldingUrl))
+                {
+                    <img src="@artikel.HoofdafbeeldingUrl" class="w-100 hero-img" alt="Artikel afbeelding" />
+                    <div class="hero-overlay position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"></div>
+                }
+                <div class="position-absolute bottom-0 p-4 z-1">
+                    <h1 class="display-4 fw-bold">@artikel.Titel</h1>
+                    @if (!string.IsNullOrEmpty(artikel.Ondertitel))
+                    {
+                        <p class="lead fst-italic text-light-emphasis">@artikel.Ondertitel</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Auteur info -->
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-person-circle fs-3 text-primary me-2"></i>
+                <div>
+                    <div class="fw-semibold">
+                        @(GetCurrentCultureString("Door", "By")) @artikel.Auteur
+                    </div>
+                    <small class="text-muted">
+                        @(GetCurrentCultureString("op", "on")) @artikel.PublicatieDatumTijd.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                        @if (!string.IsNullOrEmpty(artikel.CategorieNaam))
+                        {
+                            <span class="badge bg-primary ms-2">@artikel.CategorieNaam</span>
+                        }
+                    </small>
+                </div>
+            </div>
+
+            <!-- Inhoud -->
+            <div class="article-content fs-5 lh-lg  mb-5" style="">
+                @((MarkupString)artikel.Inhoud!)
+            </div>
+            
+            <!-- Video -->
+            @if (!string.IsNullOrEmpty(artikel.VideoUrl))
+            {
+                <div class="my-5 rounded shadow overflow-hidden mx-auto" style="max-width: 800px;">
+                    <div class="ratio ratio-16x9">
+                        @if (IsYouTubeUrl(artikel.VideoUrl))
+                        {
+                            <iframe src="@GetYouTubeEmbedUrl(artikel.VideoUrl)" frameborder="0"
+                                    allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                        }
+                        else
+                        {
+                            <video controls src="@artikel.VideoUrl" class="w-100 h-100">
+                                Your browser does not support the video tag.
+                            </video>
+                        }
+                    </div>
+                </div>
+            }
+            <!-- Gerelateerde links -->
+            @if (artikel.InterneLinks?.Any() == true)
+            {
+                <h4 class="mb-3">@GetCurrentCultureString("Gerelateerde Links", "Related Links")</h4>
+                <div class="row row-cols-1 row-cols-md-2 g-3 mb-5">
+                    @foreach (var link in artikel.InterneLinks)
+                    {
+                        <div class="col">
+                            <a href="@link.Url" class="card h-100 shadow-sm text-decoration-none text-reset card-link" target="_blank" rel="noopener">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        @(Language?.ToLower() == "en" ? link.TekstEn : link.TekstNl)
+                                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                    </h6>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Terug knop -->
+            <div class="text-center mt-5">
+                <a href="/news/@CurrentLanguage" class="btn btn-primary btn-lg shadow">
+                    <i class="bi bi-arrow-left-circle me-2"></i> @GetCurrentCultureString("Terug naar Nieuwsoverzicht", "Back to News Overview")
+                </a>
+            </div>
+        </article>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [Parameter]
+    public string? Language { get; set; }
+
+    private NieuwsArtikelDto? artikel;
+    private string CurrentLanguage { get; set; } = "nl";
+
+
+    /// <summary>
+    /// Checks if a URL is a YouTube video URL.
+    /// </summary>
+    /// <param name="url">The URL to check.</param>
+    /// <returns>True if it's a YouTube URL, otherwise False.</returns>
+    private bool IsYouTubeUrl(string url)
+    {
+        // Common YouTube watch and short (youtu.be) patterns
+        return url.Contains("youtube.com/watch?v=") ||
+               url.Contains("youtu.be/") ||
+               url.Contains("youtube.com/embed/"); // Already an embed URL
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Zet geldige taal, standaard naar 'nl'
+        CurrentLanguage = (Language?.ToLower()) switch
+        {
+            "en" => "en",
+            "nl" => "nl",
+            _ => "nl"
+        };
+
+        // Stel cultuur in op taal
+        CultureInfo.CurrentUICulture = new CultureInfo(CurrentLanguage);
+
+        // Haal artikel op op basis van Id en correcte taal
+        artikel = await NieuwsService.GetNieuwsArtikelByIdAsync(Id, CurrentLanguage);
+    }
+
+    private string GetCurrentCultureString(string nlString, string enString)
+    {
+        return CurrentLanguage == "en" ? enString : nlString;
+    }
+    /// <summary>
+    /// Converts a YouTube video URL to an embeddable URL.
+    /// </summary>
+    /// <param name="url">The original YouTube URL.</param>
+    /// <returns>The YouTube embed URL.</returns>
+    private string GetYouTubeEmbedUrl(string url)
+    {
+        string videoId = string.Empty;
+
+        // If it's already an embed URL, just return it
+        if (url.Contains("youtube.com/embed/"))
+        {
+            return url;
+        }
+
+        // Try to extract ID from watch?v= or /v/
+        var watchMatch = System.Text.RegularExpressions.Regex.Match(url, @"[?&]v=([^&]+)");
+        if (watchMatch.Success)
+        {
+            videoId = watchMatch.Groups[1].Value;
+        }
+        else
+        {
+            // Try to extract ID from youtu.be/
+            var shortUrlMatch = System.Text.RegularExpressions.Regex.Match(url, @"youtu\.be/([a-zA-Z0-9_-]+)");
+            if (shortUrlMatch.Success)
+            {
+                videoId = shortUrlMatch.Groups[1].Value;
+            }
+            else
+            {
+                // Fallback for other less common patterns if needed, or return original URL
+                // For example, if the URL is just the ID, or a playlist link
+            }
+        }
+
+        if (!string.IsNullOrEmpty(videoId))
+        {
+            // Add modestbranding=1 to hide YouTube logo, and rel=0 for no related videos (deprecated but still in use sometimes)
+            return $"https://www.youtube.com/embed/{videoId}?modestbranding=1&rel=0";
+        }
+
+        // If no video ID found, return the original URL (though it won't embed correctly as a direct file)
+        return url;
+    }
+}

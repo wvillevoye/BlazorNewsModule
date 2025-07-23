@@ -1,0 +1,259 @@
+﻿@page "/admin/news/add"
+@page "/admin/news/edit/{Id:int}"
+@using Blazor.Shared.Editors
+
+@inject INieuwsService NieuwsService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(artikelId == 0 ? "Nieuw Artikel Toevoegen" : "Artikel Bewerken")</PageTitle>
+
+<div class="container my-5">
+    <h1 class="mb-4">@(artikelId == 0 ? "Nieuw Nieuwsartikel Toevoegen" : $"Artikel \"{artikel?.TitelNl}\" Bewerken")</h1>
+
+    @if (artikel == null && artikelId != 0)
+    {
+        <p><em>Artikel laden...</em></p>
+    }
+    else
+    {
+        <EditForm Model="@artikel" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger" />
+            <div class="mb-3">
+                <label for="hoofdafbeeldingUrl" class="form-label">Hoofdafbeelding URL</label>
+                <InputText id="hoofdafbeeldingUrl" class="form-control" @bind-Value="artikel!.HoofdafbeeldingUrl" />
+                <ValidationMessage For="@(() => artikel!.HoofdafbeeldingUrl)" />
+            </div>
+
+           <div class="border p-4 mb-4 rounded shadow-sm">
+                <h4 class="mb-3">Taalafhankelijke Inhoud</h4>
+            <ul class="nav nav-tabs mb-3" id="inhoudTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="inhoudNl-tab" data-bs-toggle="tab" data-bs-target="#inhoudNl-pane" type="button" role="tab" aria-controls="inhoudNl-pane" aria-selected="true">Nederlands</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="inhoudEn-tab" data-bs-toggle="tab" data-bs-target="#inhoudEn-pane" type="button" role="tab" aria-controls="inhoudEn-pane" aria-selected="false">Engels</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="inhoudTabsContent">
+                <div class="tab-pane fade show active" id="inhoudNl-pane" role="tabpanel" aria-labelledby="inhoudNl-tab" tabindex="0">
+
+                    <div class="mb-3">
+                        <label for="titelNl" class="form-label">Titel (NL)</label>
+                        <InputText id="titelNl" class="form-control" @bind-Value="artikel!.TitelNl" />
+                        <ValidationMessage For="@(() => artikel!.TitelNl)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ondertitelNl" class="form-label">Ondertitel (NL)</label>
+                        <InputText id="ondertitelNl" class="form-control" @bind-Value="artikel!.OndertitelNl" />
+                        <ValidationMessage For="@(() => artikel!.OndertitelNl)" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="inhoudNl" class="form-label visually-hidden">Inhoud (NL)</label>
+
+                            @if (TinyMceEditorEnabled){
+                                    <Blazor.Shared.Editors.TinyMceEditor @bind-Content="artikel!.InhoudNl" Id="inhoudNl" Toolbar="bold italic | link image | numlist bullist | code" Plugins="lists link image code" />
+                            }
+                            @if(QuillEditorEnabled)
+                            {
+                                <Blazor.Shared.Editors.QuillEditor @bind-QContent="artikel!.InhoudNl" UploadUrl="/api/quill/upload" />
+                            }   
+                        
+                        <ValidationMessage For="@(() => artikel!.InhoudNl)" />
+                    </div>
+                </div>
+               
+                
+                <div class="tab-pane fade" id="inhoudEn-pane" role="tabpanel" aria-labelledby="inhoudEn-tab" tabindex="0">
+                    <div class="mb-3">
+                        <label for="titelEn" class="form-label">Titel (EN)</label>
+                        <InputText id="titelEn" class="form-control" @bind-Value="artikel!.TitelEn" />
+                        <ValidationMessage For="@(() => artikel!.TitelEn)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="ondertitelEn" class="form-label">Ondertitel (EN)</label>
+                        <InputText id="ondertitelEn" class="form-control" @bind-Value="artikel!.OndertitelEn" />
+                        <ValidationMessage For="@(() => artikel!.OndertitelEn)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="inhoudEn" class="form-label visually-hidden">Inhoud (EN)</label>
+                           
+                            @if (TinyMceEditorEnabled)
+                            {
+                                <TinyMceEditor @bind-Content="artikel!.InhoudEn" Id="inhoudEn" Toolbar="bold italic | link image | numlist bullist | code" Plugins="lists link image code" />
+                            }
+                            @if(QuillEditorEnabled)
+                            {
+                                <QuillEditor @bind-QContent="artikel!.InhoudEn" UploadUrl="/api/quill/upload" />
+                            }
+    )
+                    
+                            <QuillEditor @bind-QContent="artikel!.InhoudEn" UploadUrl="/api/quill/upload" />
+                        <ValidationMessage For="@(() => artikel!.InhoudEn)" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="categorie" class="form-label">Categorie</label>
+                        <InputSelect id="categorie" class="form-select" @bind-Value="artikel!.CategorieId">
+                            <option value="">-- Selecteer Categorie --</option>
+                            @if (artikel!.BeschikbareCategorieen != null)
+                            {
+                                @foreach (var cat in artikel.BeschikbareCategorieen)
+                                {
+                                    <option value="@cat.Id">@cat.Naam</option>
+                                }
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => artikel!.CategorieId)" />
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="auteur" class="form-label">Auteur</label>
+                        <InputText id="auteur" class="form-control" @bind-Value="artikel!.Auteur" />
+                        <ValidationMessage For="@(() => artikel!.Auteur)" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="publicatieDatumTijd" class="form-label">Publicatie Datum & Tijd</label>
+                        <InputDate id="publicatieDatumTijd" class="form-control" @bind-Value="artikel!.PublicatieDatumTijd" />
+                        <ValidationMessage For="@(() => artikel!.PublicatieDatumTijd)" />
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="videoUrl" class="form-label">Video URL (optioneel)</label>
+                        <InputText id="videoUrl" class="form-control" @bind-Value="artikel!.VideoUrl" />
+                        <ValidationMessage For="@(() => artikel!.VideoUrl)" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-light p-3 rounded mb-3">
+                <h5>Interne links</h5>
+
+                @foreach (var link in artikel.InterneLinks)
+                {
+                    <div class="row align-items-center mb-2">
+                        <div class="col-md-2">
+                            <InputText @bind-Value="link.TekstEn" class="form-control" placeholder="LinktekstEn" />
+                        </div>
+                        <div class="col-md-2">
+                            <InputText @bind-Value="link.TekstNl" class="form-control" placeholder="Linktekst Nederlands" />
+                        </div>
+                        <div class="col-md-7">
+                            <InputText @bind-Value="link.Url" class="form-control" placeholder="Link URL" />
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <button type="button" class="btn btn-danger" @onclick="() => RemoveLink(link)">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <div class="text-start">
+                    <button type="button" class="btn btn-secondary mt-2" @onclick="AddLink">
+                        + Voeg link toe
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success me-2">@(artikelId == 0 ? "Toevoegen" : "Opslaan")</button>
+            <a href="/admin/news" class="btn btn-secondary">Annuleren</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Het ID van het nieuwsartikel dat moet worden bewerkt.
+    /// Als de waarde 0 is, wordt een nieuw artikel aangemaakt.
+    /// </summary>
+    [Parameter]
+    public int Id { get; set; } 
+    
+    /// <summary>
+    /// Bepaalt of de Quill rich-text editor ingeschakeld moet zijn.
+    /// Standaard is deze <c>true</c> (ingeschakeld).
+    /// </summary>
+    [Parameter]
+    public bool QuillEditorEnabled { get; set; } = true; // Optioneel, standaard aan
+    
+    /// <summary>
+    /// Bepaalt of de TinyMCE rich-text editor ingeschakeld moet zijn.
+    /// Standaard is deze <c>false</c> (uitgeschakeld).
+    /// </summary>
+    [Parameter]
+    public bool TinyMceEditorEnabled { get; set; } = false; // Optioneel, standaard uit
+
+    private NieuwsArtikelEditDto? artikel;
+    private int artikelId => Id; // Gemakkelijkere naam
+    private string adminLanguage = "nl"; // Taal voor de admin interface (categorie dropdown)
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Als ID 0 is, is het een nieuw artikel
+        if (artikelId == 0)
+        {
+            artikel = new NieuwsArtikelEditDto();
+        }
+        else
+        {
+            // Laad bestaand artikel voor bewerking
+            artikel = await NieuwsService.GetNieuwsArtikelForEditAsync(artikelId, adminLanguage);
+        }
+
+        // Zorg altijd dat de lijst met categorieën geladen is
+        // (Dit wordt in GetNieuwsArtikelForEditAsync al gedaan, maar voor 'nieuw' geval apart)
+        if (artikel != null && !artikel.BeschikbareCategorieen.Any())
+        {
+             artikel.BeschikbareCategorieen = (await NieuwsService.GetNieuwsCategorieenForAdminAsync(adminLanguage)).ToList();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (artikel == null) return;
+
+        if (artikelId == 0)
+        {
+            // Nieuw artikel toevoegen
+            await NieuwsService.AddNieuwsArtikelFromDtoAsync(artikel);
+        }
+        else
+        {
+            // Bestaand artikel bijwerken
+            await NieuwsService.UpdateNieuwsArtikelFromDtoAsync(artikel);
+        }
+
+        // Navigeer terug naar de lijstpagina na succes
+        NavigationManager.NavigateTo("/admin");
+    }
+
+
+    private void RemoveLink(NieuwsInternalLinkDto link)
+    {
+        artikel!.InterneLinks.Remove(link);
+    }
+    private void AddLink()
+    {
+        artikel!.InterneLinks.Add(new NieuwsInternalLinkDto
+        {
+            TekstNl = "",
+            TekstEn = "",
+            Url = ""
+        });
+    }
+}

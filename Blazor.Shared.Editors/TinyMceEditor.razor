@@ -1,0 +1,104 @@
+﻿@using Microsoft.JSInterop
+ 
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<textarea id="@_editorId" value="@CurrentContent"></textarea>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = Guid.NewGuid().ToString("N"); // Unieke ID voor de editor
+
+    [Parameter]
+    public string Content { get; set; } = string.Empty; // De initiele inhoud die van de parent komt
+
+    [Parameter]
+    public EventCallback<string> ContentChanged { get; set; } // Callback voor wanneer de inhoud verandert
+
+    [Parameter]
+    public string Toolbar { get; set; } = null!; // Bijv: "bold italic | link image | numlist bullist | code"
+    [Parameter]
+    public string Plugins { get; set; } = null!; // Bijv: "lists link image code"
+
+    private string _editorId = string.Empty;
+    private DotNetObjectReference<TinyMceEditor>? _dotNetRef;
+
+    private string _currentContent = string.Empty;
+    private string CurrentContent
+    {
+        get => _currentContent;
+        set
+        {
+            if (_currentContent != value)
+            {
+                _currentContent = value;
+                ContentChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _editorId = $"tinymce-{Id}"; // Genereer een unieke HTML ID voor de textarea
+        _currentContent = Content; // Initialiseer de interne state met de Content parameter
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync(
+                "tinymceBlazor.init",
+                _editorId,
+                _dotNetRef,
+                Toolbar,
+                Plugins
+            );
+        }
+    }
+
+    // Deze methode wordt aangeroepen vanuit JavaScript wanneer de inhoud verandert
+    [JSInvokable]
+    public Task SetContent(string content)
+    {
+        CurrentContent = content; // Update de Blazor component's interne property
+        return Task.CompletedTask;
+    }
+
+    // Correctie: Verwijder 'artikelId' referentie.
+    // Deze methode is bedoeld om de editorinhoud te updaten als de 'Content' parameter verandert
+    // (bijvoorbeeld wanneer de parent een nieuwe waarde doorgeeft).
+    protected override async Task OnParametersSetAsync()
+    {
+        // Alleen de editor updaten als de content van de parameter daadwerkelijk anders is
+        // dan de content die de editor op dit moment heeft.
+        // We willen niet onnodig JS-interop calls doen.
+        if (_currentContent != Content && _dotNetRef != null)
+        {
+            // Update de TinyMCE editor vanuit Blazor met de nieuwe Content parameter
+            await JSRuntime.InvokeVoidAsync("tinymceBlazor.setContent", _editorId, Content);
+            _currentContent = Content; // Synchroniseer de interne Blazor state
+        }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (JSRuntime is not IJSUnmarshalledRuntime)
+            {
+                await JSRuntime.InvokeVoidAsync("tinymceBlazor.destroy", _editorId);
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit al verbroken — negeren
+        }
+        catch (ObjectDisposedException)
+        {
+            // JSRuntime al opgeruimd — ook negeren
+        }
+
+        _dotNetRef?.Dispose();
+    }
+}
