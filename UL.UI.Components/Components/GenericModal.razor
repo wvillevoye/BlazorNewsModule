@@ -1,0 +1,70 @@
+﻿@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div id="@ModalId" class="modal fade @(Visible ? "show d-block" : "")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog @ModalSize" role="document">
+        <div class="modal-content">
+            <div class="modal-header @HeaderCssClass">
+                <h5 class="modal-title">@Title</h5>
+                <button type="button" class="btn-close @CloseButtonCssClass" onclick="@Close" aria-label="Close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body @BodyCssClass" style="@BodyStyle">
+                @BodyContent
+            </div>
+            @if (FooterContent is not null)
+            {
+                <div class="modal-footer @FooterCssClass">
+                    @FooterContent
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    // Parameters voor de modal
+    [Parameter] public string ModalId { get; set; } = "genericModal"; // Unieke ID voor de modal
+    [Parameter] public string Title { get; set; } = "Modal Title";
+    [Parameter] public RenderFragment? BodyContent { get; set; } // Dit is de inhoud van de body!
+    [Parameter] public RenderFragment? FooterContent { get; set; } // Optionele inhoud voor de footer
+    [Parameter] public string ModalSize { get; set; } = "modal-lg"; // Voor Bootstrap modal-sm, modal-lg, modal-xl
+    [Parameter] public string HeaderCssClass { get; set; } = "bg-dark text-white"; // Standaard donkere header
+    [Parameter] public string BodyCssClass { get; set; } = "";
+    [Parameter] public string FooterCssClass { get; set; } = "";
+    [Parameter] public string CloseButtonCssClass { get; set; } = "btn-close-white"; // Standaard witte sluitknop
+    [Parameter] public string BodyStyle { get; set; } = "max-height: 500px; overflow-y: auto;"; // Standaard scrollable body
+
+    // EventCallback om aan te geven dat de modal gesloten is
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    private bool Visible { get; set; }
+
+    // IJSRuntime injectie (optioneel, voor focus e.d.)
+    
+
+    public async Task Show()
+    {
+        Visible = true;
+        StateHasChanged();
+
+        // Optioneel: JS-interop om focus te zetten, vergelijkbaar met je eerdere code
+        await Task.Delay(50); // Geef DOM even tijd om te renderen
+        await JSRuntime.InvokeVoidAsync("blazorFocusModal", ModalId);
+    }
+
+    public async Task Close()
+    {
+        Visible = false;
+        StateHasChanged();
+        await OnClosed.InvokeAsync(); // Meld de parent component dat de modal gesloten is
+    }
+
+    // JS-functie om de focus te zetten (voeg dit toe aan je wwwroot/js/app.js of vergelijkbaar)
+    // window.blazorFocusModal = (modalId) => {
+    //     const modal = document.getElementById(modalId);
+    //     if (modal) {
+    //         modal.focus(); // Of focus een specifiek element in de modal
+    //     }
+    // };
+}

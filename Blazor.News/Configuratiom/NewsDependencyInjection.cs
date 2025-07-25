@@ -1,6 +1,7 @@
 ﻿using Blazor.News.Data;
 using Blazor.News.DATA.Validators;
 using Blazor.News.Services;
+using Blazor.Shared.Editors;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,7 @@ namespace Blazor.News.Configuratiom
 
             services.AddValidatorsFromAssemblyContaining<NieuwsArtikelEditDtoValidator>();
             services.AddFluentValidationAutoValidation();
-
+          
             services.AddScoped<INieuwsService, NieuwsService>();
 
         }

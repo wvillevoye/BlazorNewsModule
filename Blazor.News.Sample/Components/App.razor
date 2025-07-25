@@ -29,7 +29,7 @@
         <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
         <script src="_content/Blazor.Shared.Editors/JS/quill-blazor-interop.js"></script>
     }
-    if(tinyMceEditorEnabled){
+    @if(tinyMceEditorEnabled){
         @*Als je TinyMCEeditor wilt gebruiken  !   wel effe gratis een Apikey Aanmaken https://www.tiny.cloud/pricing/ *@
         <script src="https://cdn.tiny.cloud/1/b27yqg5y7edfx6r5nypuj5oxa3vkw81phe31eluv9647z5pi/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
         <script src="_content/Blazor.Shared.Editors/JS/tinymce-blazor-interop.js"></script>

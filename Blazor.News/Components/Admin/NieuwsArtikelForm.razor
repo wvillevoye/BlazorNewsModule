@@ -54,11 +54,11 @@
                         <label for="inhoudNl" class="form-label visually-hidden">Inhoud (NL)</label>
 
                             @if (TinyMceEditorEnabled){
-                                    <Blazor.Shared.Editors.TinyMceEditor @bind-Content="artikel!.InhoudNl" Id="inhoudNl" Toolbar="bold italic | link image | numlist bullist | code" Plugins="lists link image code" />
+                                    <TinyMceEditor @bind-Content="artikel!.InhoudNl" Id="inhoudNl" Toolbar="bold italic | link image | numlist bullist | code" Plugins="lists link image code" />
                             }
                             @if(QuillEditorEnabled)
                             {
-                                <Blazor.Shared.Editors.QuillEditor @bind-QContent="artikel!.InhoudNl" UploadUrl="/api/quill/upload" />
+                                <QuillEditor @bind-QContent="artikel!.InhoudNl" UploadUrl="/api/quill/upload" Enabled=@QuillEditorEnabled />
                             }   
                         
                         <ValidationMessage For="@(() => artikel!.InhoudNl)" />
@@ -86,9 +86,9 @@
                             }
                             @if(QuillEditorEnabled)
                             {
-                                <QuillEditor @bind-QContent="artikel!.InhoudEn" UploadUrl="/api/quill/upload" />
+                                <QuillEditor @bind-QContent="artikel!.InhoudEn" UploadUrl="/api/quill/upload" Enabled=@QuillEditorEnabled />
                             }
-    )
+    
                     
                             <QuillEditor @bind-QContent="artikel!.InhoudEn" UploadUrl="/api/quill/upload" />
                         <ValidationMessage For="@(() => artikel!.InhoudEn)" />
@@ -204,6 +204,23 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        if (Id <= 0)
+        {
+            // Optioneel: valideer parameter
+            return;
+        }
+
+        // Laad het nieuwsartikel met dit ID
+        await LoadArtikelAsync(Id);
+    }
+    
+    
+    
+    
+    
+    
+    private async Task LoadArtikelAsync(int id)
+    {
         // Als ID 0 is, is het een nieuw artikel
         if (artikelId == 0)
         {
@@ -239,7 +256,7 @@
         }
 
         // Navigeer terug naar de lijstpagina na succes
-        NavigationManager.NavigateTo("/admin");
+        //NavigationManager.NavigateTo("/admin");
     }
 
 

@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddControllers();
-
+builder.Services.AddHttpClient();
 
 // Hier roep je de extensiemethode aan vanuit je RCL
 builder.Services.AddSiteNews(builder.Configuration);
@@ -58,6 +58,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
+
+
+
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()

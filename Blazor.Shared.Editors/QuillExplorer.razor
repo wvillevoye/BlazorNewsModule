@@ -1,0 +1,168 @@
+﻿@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Hosting
+@using Microsoft.JSInterop
+@using UL.UI.Components
+@using UL.UI.Components.Components
+@inject HttpClient Http
+
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<ManualCopyModal @ref="manualCopyModalRef" OnClosed="HandleModalClosed" Message="Use the link below by selecting and copying it"  Title="Use this link"/>
+<BootstrapToast @ref="toast" />
+
+@if (isOpen)
+{
+    <div id="blazorModal" @key="isOpen" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header  bg-dark text-white">
+                    <h5 class="modal-title">Select a picture</h5>
+                    <button type="button" class="btn-close" onclick="@Close"></button>
+                </div>
+                <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+                    @if (imageUrls.Count == 0)
+                    {
+                        <p><em>Geen afbeeldingen gevonden.</em></p>
+                    }
+                    else
+                    {
+                        <div class="row">
+
+
+                            <table class="table table-striped">
+                                <thead >
+                                    <tr>
+                                      <th>Tumb</th>
+                                      @* <th>Url</th> *@
+                                      <th>FileName</th>
+                                      <th> Size</th>
+                                      <th>LastModified</th>
+                                       <th>Actions</th>
+                                    </tr>
+                                  </thead>
+                            
+                            <tbody>
+                            
+                                    @foreach (var img in imageUrls) 
+                                    {
+                                 
+                                      <tr>
+                                          <td style="width:55px;"><img src="@img.Url" alt="@img.FileName" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px; cursor: pointer;" onclick="@(() => SelectImage(img.Url))" /></td>
+                                         @*  <td class="align-middle" style="font-size: 0.8rem;">@MakeAbsoluteUrl(img.Url!.Trim())</td> *@
+                                          <td class="align-middle" style="font-size: 0.8rem;">@img.FileName</td>
+                                          <td class="align-middle" style="font-size: 0.8rem;">@FormatSize(img.Size)</td>
+                                          <td class="align-middle" style="font-size: 0.8rem;">@img.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td class="align-middle">
+
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="@(() => OpenManualCopyModal(img.Url))"> <i class="bi bi-clipboard"></i> </button>
+                                                <button type="button"  class="btn btn-sm btn-danger" onclick="@(() => DeleteImage(img.FileName!))"><i class="bi bi-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    }
+
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="@Close" data-bs-dismiss="modal">Close</button>
+                </div>
+            
+            </div>
+            
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter] public EventCallback<string> OnImageSelected { get; set; }
+
+    private BootstrapToast? toast;
+
+    private List<ImageFile> imageUrls = [];
+    private bool isOpen = false;
+
+    private ManualCopyModal? manualCopyModalRef;
+
+
+    public async Task ShowAsync(List<ImageFile> urls)
+    {
+        imageUrls = urls;
+        isOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task SelectImage(string url)
+    {
+        await OnImageSelected.InvokeAsync(url);
+        isOpen = false;
+    }
+
+    private void Close()
+    {
+        isOpen = false;
+        StateHasChanged();
+    }
+
+    private string FormatSize(long sizeInBytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = sizeInBytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.#} {sizes[order]}";
+    }
+
+    private async Task DeleteImage(string fileName)
+    {
+        bool success = await JSRuntime.InvokeAsync<bool>("quillBlazor.deleteImage", fileName);
+        if (toast is not null)
+        {
+            await toast.Show("DeleteItem", success ? "Deleted!" : "Failure Delete", success ? "success" : "error");
+        }
+        Close();
+    }
+    
+    private string MakeAbsoluteUrl(string url)
+    {
+        return Navigation.BaseUri.TrimEnd('/') + url.Trim();
+    }   
+    
+    
+    private async Task OpenManualCopyModal(string url)
+    {
+        if (manualCopyModalRef is not null)
+        {
+            await manualCopyModalRef.Show(
+                Navigation.BaseUri.TrimEnd('/') + url.Trim(),
+                "The link has been automatically selected. Press Ctrl+C (Windows) or Cmd+C (Mac) to copy."
+            );
+        }
+        Close();
+    }
+
+    private void HandleModalClosed()
+    {
+        Console.WriteLine("De handmatige kopieer-modal is gesloten.");
+       
+    }
+  
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (isOpen)
+        {
+            await JSRuntime.InvokeVoidAsync("blazorFocusModal", "blazorModal");
+
+           
+
+        }
+    }
+}

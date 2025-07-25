@@ -1,23 +1,52 @@
 ﻿@using Microsoft.JSInterop
+@using System.Text.Json
  
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
+<QuillExplorer @ref="explorer" OnImageSelected="InsertImageFromExplorer" />
+
 <div id="@EditorId" style="min-height: 200px;"></div>
 
 @code {
-    [Parameter] public string QContent { get; set; } = string.Empty;
-    [Parameter] public EventCallback<string> QContentChanged { get; set; }
-    [Parameter] public string UploadUrl { get; set; } = "/api/quill/upload";
+    [Parameter] 
+    public string QContent { get; set; } = string.Empty;
+    [Parameter] 
+    public EventCallback<string> QContentChanged { get; set; }
+    [Parameter] 
+    public string UploadUrl { get; set; } = "/api/quill/upload";
+    [Parameter]
+    public bool Enabled { get; set; }
 
     private string EditorId = $"quill-editor-{Guid.NewGuid():N}";
     private DotNetObjectReference<QuillEditor>? _objRef;
     private bool _initialized = false;
     private string _previousContent = string.Empty;
 
+    private QuillExplorer? explorer;
+
+    private async Task InsertImageFromExplorer(string imageUrl)
+    {
+        await JSRuntime.InvokeVoidAsync("quillBlazor.insertImage", EditorId, imageUrl);
+    }
+   
+
+  
+
+    [JSInvokable]
+    public async Task OnBrowseImages(JsonElement imageData)
+    {
+        var urls = JsonSerializer.Deserialize<List<ImageFile>>(imageData.GetRawText());
+        if (explorer != null)
+        {
+            await explorer.ShowAsync(urls);
+            // eventueel imageUrls = urls;
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && Enabled)
         {
             _objRef = DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("quillBlazor.init", EditorId, _objRef, UploadUrl);

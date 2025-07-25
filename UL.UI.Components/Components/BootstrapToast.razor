@@ -1,0 +1,51 @@
+﻿<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+    <div class="toast fade @toastCssClass show"
+         role="alert"
+         aria-live="assertive"
+         aria-atomic="true"
+         style="display:@(Visible ? "block" : "none")">
+        <div class="toast-header">
+            <strong class="me-auto">@Title</strong>
+            <small class="text-muted">@Timestamp</small>
+            <button type="button" class="btn-close" @onclick="Hide"></button>
+        </div>
+        <div class="toast-body">@Message</div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Info";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public int Duration { get; set; } = 3000;
+    [Parameter] public string Type { get; set; } = "info";
+
+    private bool Visible { get; set; }
+    private string Timestamp => DateTime.Now.ToShortTimeString();
+    private string toastCssClass => Type switch
+    {
+        "success" => "bg-success text-white",
+        "error" => "bg-danger text-white",
+        "warning" => "bg-warning text-dark",
+        _ => "bg-info text-white"
+    };
+
+    public async Task Show(string title, string message, string type = "info")
+    {
+        Title = title;
+        Message = message;
+        Type = type;
+        Visible = true;
+
+        StateHasChanged();
+
+        await Task.Delay(Duration);
+        await Hide();
+    }
+
+    public Task Hide()
+    {
+        Visible = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

@@ -55,5 +55,56 @@ namespace Blazor.Shared.Editors.Controllers
             var imageUrl = $"/uploads/{fileName}";
             return Ok(new { url = imageUrl });
         }
+        
+       
+        [HttpGet("images")]
+        public IActionResult GetImages()
+        {
+            var uploadsFolder = Path.Combine(_Env.WebRootPath, "uploads");
+
+            if (!Directory.Exists(uploadsFolder))
+                return Ok(Array.Empty<string>());
+
+            var allowedExtensions = new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif" };
+
+            var images = Directory.GetFiles(uploadsFolder)
+                  .Where(file => allowedExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                  .Select(file => new ImageFile
+                  {
+                      Url = "/uploads/" + Path.GetFileName(file),
+                      FileName = Path.GetFileName(file),
+                      Size = new FileInfo(file).Length,
+                      LastModified = System.IO.File.GetLastWriteTime(file)
+                  })
+                  .ToList();
+
+            return Ok(images);
+        }
+
+        [HttpDelete("images/{fileName}")]
+        public IActionResult DeleteImage(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return BadRequest("Bestandsnaam is ongeldig.");
+
+            // Beveiliging: voorkom path traversal
+            fileName = Path.GetFileName(fileName);
+
+            var uploadsFolder = Path.Combine(_Env.WebRootPath, "uploads");
+            var fullPath = Path.Combine(uploadsFolder, fileName);
+
+            if (!System.IO.File.Exists(fullPath))
+                return NotFound("Afbeelding niet gevonden.");
+
+            try
+            {
+                System.IO.File.Delete(fullPath);
+                return NoContent(); // 204 OK zonder body
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Fout bij verwijderen: {ex.Message}");
+            }
+        }
     }
 }

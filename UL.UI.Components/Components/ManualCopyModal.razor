@@ -1,0 +1,57 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+<div class="modal fade @(Visible ? "show d-block" : "")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header  bg-dark text-white">
+                <h5 class="modal-title">@Title</h5>
+                <button type="button" class="btn-close" onclick="@CloseModal" aria-label="Close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>@Message</p>
+                <div class="input-group mb-3">
+                    <input id="urlInput" type="text" class="form-control" value="@TextToDisplay" readonly>
+                </div>
+                <small class="text-muted">Selecteer de URL hierboven en kopieer deze handmatig (Ctrl+C / Cmd+C).</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="@CloseModal" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public string Title { get; set; } = "Deel deze link";
+    [Parameter] public string Message { get; set; } = "Deel de onderstaande link door deze te selecteren en te kopiëren:";
+    [Parameter] public string TextToDisplay { get; set; } = "";
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    private bool Visible { get; set; }
+
+    // Injecteer JSRuntime om JavaScript te kunnen aanroepen voor selectie
+  
+
+    public async Task Show(string textToDisplay, string title = "Deel deze link", string message = "Deel de onderstaande link door deze te selecteren en te kopiëren:")
+    {
+        TextToDisplay = textToDisplay;
+        Title = title;
+        Message = message;
+        Visible = true;
+        StateHasChanged(); // Zorg dat de modal zichtbaar wordt voordat de JS draait
+
+        // Wacht even tot de DOM is bijgewerkt en het input-veld bestaat
+        await Task.Delay(50); // Een kleine vertraging is vaak nodig voor DOM-updates
+        
+        // Selecteer de tekst in het inputveld
+        await JSRuntime.InvokeVoidAsync("selectElementText", "urlInput");
+    }
+
+    private async Task CloseModal()
+    {
+        Visible = false;
+        StateHasChanged();
+        await OnClosed.InvokeAsync();
+    }
+}
