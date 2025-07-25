@@ -164,7 +164,7 @@ namespace Blazor.News.Services
                 VideoUrl = dto.VideoUrl,
                 InhoudNl = dto.InhoudNl,
                 InhoudEn = dto.InhoudEn,
-                CategorieId = dto.CategorieId,
+                CategorieId = dto.CategorieId!.Value,
                 InterneLinks = [.. dto.InterneLinks.Select(link => new NieuwsInternalLink
                 {
                     TekstNl = link.TekstNl, // afhankelijk van je model, of:
@@ -195,7 +195,7 @@ namespace Blazor.News.Services
             artikel.VideoUrl = dto.VideoUrl;
             artikel.InhoudNl = dto.InhoudNl;
             artikel.InhoudEn = dto.InhoudEn;
-            artikel.CategorieId = dto.CategorieId;
+            artikel.CategorieId = dto.CategorieId!.Value;
              _Context.NieuwsInternalLinks.RemoveRange(artikel.InterneLinks);
             artikel.InterneLinks = [.. dto.InterneLinks.Select(link => new NieuwsInternalLink
             {

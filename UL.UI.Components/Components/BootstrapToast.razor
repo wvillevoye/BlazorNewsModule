@@ -1,33 +1,71 @@
-﻿<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-    <div class="toast fade @toastCssClass show"
-         role="alert"
-         aria-live="assertive"
-         aria-atomic="true"
-         style="display:@(Visible ? "block" : "none")">
-        <div class="toast-header">
-            <strong class="me-auto">@Title</strong>
-            <small class="text-muted">@Timestamp</small>
-            <button type="button" class="btn-close" @onclick="Hide"></button>
+﻿<div class="position-fixed p-3 @PositionClass" style="z-index: 1100;">
+    <div class="card text-white @toastCssClass shadow-lg rounded"
+         style="width: 22rem; display:@(Visible ? "block" : "none"); animation: fadein 0.5s ease;">
+        <div class="card-header d-flex justify-content-between align-items-center border-0 bg-transparent">
+            <div>
+                <i class="@IconClass me-2"></i>
+                <strong>@Title</strong>
+            </div>
+            <button type="button" class="btn-close btn-close-white" @onclick="Hide"></button>
         </div>
-        <div class="toast-body">@Message</div>
+        <div class="card-body pt-0">
+            <p class="card-text">@Message</p>
+        </div>
+        <div class="card-footer bg-transparent text-end text-white-50 small pt-0">
+            @Timestamp
+        </div>
     </div>
 </div>
+
+ 
 
 @code {
     [Parameter] public string Title { get; set; } = "Info";
     [Parameter] public string Message { get; set; } = "";
     [Parameter] public int Duration { get; set; } = 3000;
     [Parameter] public string Type { get; set; } = "info";
+    [Parameter] public string PositionHorizontal { get; set; } = "end"; // "start", "center", "end"
+    [Parameter] public string PositionVertical { get; set; } = "bottom"; // "top", "center", "bottom"
 
     private bool Visible { get; set; }
     private string Timestamp => DateTime.Now.ToShortTimeString();
+
     private string toastCssClass => Type switch
     {
         "success" => "bg-success text-white",
         "error" => "bg-danger text-white",
         "warning" => "bg-warning text-dark",
-        _ => "bg-info text-white"
+        _ => "bg-primary text-white"
     };
+
+    private string IconClass => Type switch
+    {
+        "success" => "bi bi-check-circle-fill",
+        "error" => "bi bi-x-circle-fill",
+        "warning" => "bi bi-exclamation-triangle-fill",
+        _ => "bi bi-info-circle-fill"
+    };
+    private string PositionClass
+    {
+        get
+        {
+            var vert = PositionVertical switch
+            {
+                "top" => "top-0",
+                "center" => "top-50 translate-middle-y",
+                _ => "bottom-0" // default
+            };
+
+            var horiz = PositionHorizontal switch
+            {
+                "start" => "start-0",
+                "center" => "start-50 translate-middle-x",
+                _ => "end-0" // default
+            };
+
+            return $"{vert} {horiz}";
+        }
+    }
 
     public async Task Show(string title, string message, string type = "info")
     {

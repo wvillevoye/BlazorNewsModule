@@ -17,7 +17,7 @@ namespace Blazor.News.DATA.ModelsDTO
         public string? VideoUrl { get; set; }
         public string? InhoudNl { get; set; }
         public string? InhoudEn { get; set; }
-        public int CategorieId { get; set; }
+        public int? CategorieId { get; set; }
 
 
         // Om geselecteerde categorieën te tonen in een dropdown

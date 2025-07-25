@@ -1,12 +1,19 @@
 ﻿@page "/news"
 @page "/news/{language?}"
 @page "/news/{language?}/{pageNumber:int?}"
+@using UL.UI.Components.Components
 
 @inject INieuwsService NieuwsService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 
 <PageTitle>@GetCurrentCultureString("Laatste Nieuws", "Latest News")</PageTitle>
+@* <BootstrapToast @ref="toast" PositionHorizontal="center" PositionVertical="top" />
+<button type="button" class="btn btn-primary" @onclick="ShowToast">Toon Toast</button>
+ *@
+
+
+
 
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -78,14 +85,22 @@
     </nav>
 </div>
 
+
+
 @code {
     [Parameter]
     public string? Language { get; set; }
 
     [Parameter]
     public int? PageNumber { get; set; }
-
-    
+    // private BootstrapToast toast;
+    // private async Task ShowToast()
+    // {
+    //     if (toast != null)
+    //     {
+    //         await toast.Show("Succes!", "Je actie is geslaagd.", "success");
+    //     }
+    // }
     /// <summary>
     /// Het aantal nieuwsartikelen dat per pagina moet worden weergegeven.
     /// De standaardwaarde is 6, maar kan worden overschreven via de configuratie (e.g., appsettings.json)

@@ -1,11 +1,14 @@
 ﻿@page "/admin/news/add"
 @page "/admin/news/edit/{Id:int}"
 @using Blazor.Shared.Editors
+@using UL.UI.Components.Components
 
 @inject INieuwsService NieuwsService
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(artikelId == 0 ? "Nieuw Artikel Toevoegen" : "Artikel Bewerken")</PageTitle>
+
+<BootstrapToast @ref="toast" PositionHorizontal="center" PositionVertical="top" />
 
 <div class="container my-5">
     <h1 class="mb-4">@(artikelId == 0 ? "Nieuw Nieuwsartikel Toevoegen" : $"Artikel \"{artikel?.TitelNl}\" Bewerken")</h1>
@@ -198,17 +201,19 @@
     [Parameter]
     public bool TinyMceEditorEnabled { get; set; } = false; // Optioneel, standaard uit
 
-    private NieuwsArtikelEditDto? artikel;
+    private BootstrapToast toast;
+
+    private NieuwsArtikelEditDto? artikel=new();
     private int artikelId => Id; // Gemakkelijkere naam
     private string adminLanguage = "nl"; // Taal voor de admin interface (categorie dropdown)
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Id <= 0)
-        {
-            // Optioneel: valideer parameter
-            return;
-        }
+        // if (Id == 0)
+        // {
+        //     Optioneel: valideer parameter
+        //     return;
+        // }
 
         // Laad het nieuwsartikel met dit ID
         await LoadArtikelAsync(Id);
@@ -221,22 +226,22 @@
     
     private async Task LoadArtikelAsync(int id)
     {
-        // Als ID 0 is, is het een nieuw artikel
         if (artikelId == 0)
         {
-            artikel = new NieuwsArtikelEditDto();
+            artikel = new NieuwsArtikelEditDto
+            {
+                BeschikbareCategorieen = (await NieuwsService.GetNieuwsCategorieenForAdminAsync(adminLanguage)).ToList()
+            };
         }
         else
         {
-            // Laad bestaand artikel voor bewerking
             artikel = await NieuwsService.GetNieuwsArtikelForEditAsync(artikelId, adminLanguage);
-        }
 
-        // Zorg altijd dat de lijst met categorieën geladen is
-        // (Dit wordt in GetNieuwsArtikelForEditAsync al gedaan, maar voor 'nieuw' geval apart)
-        if (artikel != null && !artikel.BeschikbareCategorieen.Any())
-        {
-             artikel.BeschikbareCategorieen = (await NieuwsService.GetNieuwsCategorieenForAdminAsync(adminLanguage)).ToList();
+            if (artikel.BeschikbareCategorieen == null || !artikel.BeschikbareCategorieen.Any())
+            {
+                artikel.BeschikbareCategorieen = (await NieuwsService.GetNieuwsCategorieenForAdminAsync(adminLanguage)).ToList();
+                await toast.Show("Succes!", "Artikel bijgewerkt.", "success");
+            }
         }
     }
 
@@ -244,19 +249,27 @@
     {
         if (artikel == null) return;
 
-        if (artikelId == 0)
+        try
         {
-            // Nieuw artikel toevoegen
-            await NieuwsService.AddNieuwsArtikelFromDtoAsync(artikel);
-        }
-        else
-        {
-            // Bestaand artikel bijwerken
-            await NieuwsService.UpdateNieuwsArtikelFromDtoAsync(artikel);
-        }
+            if (artikelId == 0)
+            {
+                await NieuwsService.AddNieuwsArtikelFromDtoAsync(artikel);
+                await toast.Show("Succes!", "Nieuw artikel toegevoegd.", "success");
+            }
+            else
+            {
+                await NieuwsService.UpdateNieuwsArtikelFromDtoAsync(artikel);
+                await toast.Show("Succes!", "Artikel bijgewerkt.", "success");
+            }
 
-        // Navigeer terug naar de lijstpagina na succes
-        //NavigationManager.NavigateTo("/admin");
+            // Je kunt eventueel na enkele seconden navigeren
+             await Task.Delay(2000);
+             NavigationManager.NavigateTo("/admin");
+        }
+        catch (Exception ex)
+        {
+            await toast.Show("Fout!", $"Er ging iets mis: {ex.Message}", "error");
+        }
     }
 
 
