@@ -48,14 +48,14 @@
                                     {
                                  
                                       <tr>
-                                          <td style="width:55px;"><img src="@img.Url" alt="@img.FileName" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px; cursor: pointer;" onclick="@(() => SelectImage(img.Url))" /></td>
+                                          <td style="width:55px;"><img src="@img.Url" alt="@img.FileName" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px; cursor: pointer;" onclick="@(() => SelectImage(img.Url!))" /></td>
                                          @*  <td class="align-middle" style="font-size: 0.8rem;">@MakeAbsoluteUrl(img.Url!.Trim())</td> *@
                                           <td class="align-middle" style="font-size: 0.8rem;">@img.FileName</td>
                                           <td class="align-middle" style="font-size: 0.8rem;">@FormatSize(img.Size)</td>
                                           <td class="align-middle" style="font-size: 0.8rem;">@img.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
                                             <td class="align-middle">
 
-                                                <button class="btn btn-sm btn-outline-secondary" onclick="@(() => OpenManualCopyModal(img.Url))"> <i class="bi bi-clipboard"></i> </button>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="@(() => OpenManualCopyModal(img.Url!))"> <i class="bi bi-clipboard"></i> </button>
                                                 <button type="button"  class="btn btn-sm btn-danger" onclick="@(() => DeleteImage(img.FileName!))"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
@@ -88,12 +88,15 @@
     private ManualCopyModal? manualCopyModalRef;
 
 
-    public async Task ShowAsync(List<ImageFile> urls)
-    {
-        imageUrls = urls;
-        isOpen = true;
-        StateHasChanged();
-    }
+    
+        public Task ShowAsync(List<ImageFile> urls)
+        {
+            imageUrls = urls;
+            isOpen = true;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+   
 
     private async Task SelectImage(string url)
     {

@@ -201,7 +201,7 @@
     [Parameter]
     public bool TinyMceEditorEnabled { get; set; } = false; // Optioneel, standaard uit
 
-    private BootstrapToast toast;
+    private BootstrapToast? toast;
 
     private NieuwsArtikelEditDto? artikel=new();
     private int artikelId => Id; // Gemakkelijkere naam
@@ -237,10 +237,10 @@
         {
             artikel = await NieuwsService.GetNieuwsArtikelForEditAsync(artikelId, adminLanguage);
 
-            if (artikel.BeschikbareCategorieen == null || !artikel.BeschikbareCategorieen.Any())
+            if (artikel!.BeschikbareCategorieen == null || !artikel.BeschikbareCategorieen.Any())
             {
                 artikel.BeschikbareCategorieen = (await NieuwsService.GetNieuwsCategorieenForAdminAsync(adminLanguage)).ToList();
-                await toast.Show("Succes!", "Artikel bijgewerkt.", "success");
+                await toast!.Show("Succes!", "Artikel bijgewerkt.", "success");
             }
         }
     }
@@ -254,21 +254,21 @@
             if (artikelId == 0)
             {
                 await NieuwsService.AddNieuwsArtikelFromDtoAsync(artikel);
-                await toast.Show("Succes!", "Nieuw artikel toegevoegd.", "success");
+                await toast!.Show("Succes!", "Nieuw artikel toegevoegd.", "success");
             }
             else
             {
                 await NieuwsService.UpdateNieuwsArtikelFromDtoAsync(artikel);
-                await toast.Show("Succes!", "Artikel bijgewerkt.", "success");
+                await toast!.Show("Succes!", "Artikel bijgewerkt.", "success");
             }
 
             // Je kunt eventueel na enkele seconden navigeren
-             await Task.Delay(2000);
+             await Task.Delay(500);
              NavigationManager.NavigateTo("/admin");
         }
         catch (Exception ex)
         {
-            await toast.Show("Fout!", $"Er ging iets mis: {ex.Message}", "error");
+            await toast!.Show("Fout!", $"Er ging iets mis: {ex.Message}", "error");
         }
     }
 

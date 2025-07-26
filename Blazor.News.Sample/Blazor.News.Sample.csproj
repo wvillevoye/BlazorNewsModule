@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Blazor.News\Blazor.News.csproj" />
+    <ProjectReference Include="..\Blazor.Shared.Editors\Blazor.Shared.Editors.csproj" />
+    <ProjectReference Include="..\UL.UI.Components\UL.UI.Components.csproj" />
   </ItemGroup>
 
   <ItemGroup>

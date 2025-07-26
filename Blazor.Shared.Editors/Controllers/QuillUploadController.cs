@@ -15,9 +15,9 @@ namespace Blazor.Shared.Editors.Controllers
 
         [HttpPost("upload")]
         [RequestSizeLimit(1 * 1024 * 1024)] // 1 MB
-        public async Task<IActionResult> UploadImage(IFormFile image)
+        public async Task<IActionResult> UploadImage(IFormFile image, [FromQuery] int? userId = null)
         {
-            const long maxFileSize = 1 * 1024 * 1024; // 1MB
+            const long maxFileSize = 1 * 1024 * 1024;
 
             if (image == null || image.Length == 0)
                 return BadRequest(new { error = "No image uploaded" });
@@ -25,38 +25,70 @@ namespace Blazor.Shared.Editors.Controllers
             if (image.Length > maxFileSize)
                 return BadRequest(new { error = "Bestand is te groot. Maximaal 1MB toegestaan." });
 
-
-            // Open image met ImageSharp
             using var img = await Image.LoadAsync(image.OpenReadStream());
 
-            // Bepaal nieuwe breedte als groter dan 800
             if (img.Width > 800)
             {
                 var newHeight = (int)(img.Height * (800.0 / img.Width));
                 img.Mutate(x => x.Resize(800, newHeight));
             }
-             
-            // Definieer het pad naar de 'uploads' map
+
             var uploadsFolder = Path.Combine(_Env.WebRootPath, "uploads");
-
-            // Controleer of de map bestaat, zo niet, maak hem aan
             if (!Directory.Exists(uploadsFolder))
-            {
-                //Console.WriteLine($"Aanmaken van upload map: {uploadsFolder}"); // Debugging
                 Directory.CreateDirectory(uploadsFolder);
-            }
- 
-            var fileName = Path.GetRandomFileName() + ".png";  // Voor consistentie altijd png
-            var savePath = Path.Combine(_Env.WebRootPath, "uploads", fileName);
 
-            // Opslaan als PNG
+            // Bestandsnaam opbouwen
+            var originalBase = Slugify(Path.GetFileNameWithoutExtension(image.FileName));
+            if (originalBase.Length > 8)
+                originalBase = originalBase.Substring(0, 8);
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+
+            var userPart = userId.HasValue ? $"_uid{userId}" : "";
+
+            var finalName = $"{originalBase}_{timestamp}{userPart}.png";
+
+            var savePath = Path.Combine(uploadsFolder, finalName);
+
+            // Extra zekerheid: als bestand al bestaat (kleine kans), voeg een random suffix toe
+            int attempt = 0;
+            while (System.IO.File.Exists(savePath) && attempt < 10)
+            {
+                finalName = $"{originalBase}_{timestamp}{userPart}_{GenerateSafeFileName(4)}.png";
+                savePath = Path.Combine(uploadsFolder, finalName);
+                attempt++;
+            }
+
             await img.SaveAsync(savePath, new PngEncoder());
 
-            var imageUrl = $"/uploads/{fileName}";
+            var imageUrl = $"/uploads/{finalName}";
             return Ok(new { url = imageUrl });
         }
-        
-       
+
+        // Slugify de originele naam
+        private static string Slugify(string input)
+        {
+            return new string(input
+                .ToLowerInvariant()
+                .Replace(" ", "_")
+                .Where(c => char.IsLetterOrDigit(c) || c == '_')
+                .ToArray());
+        }
+
+        // Random fallback component
+        private static string GenerateSafeFileName(int length = 4)
+        {
+            var random = new Random();
+            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+
+
+
+
+
         [HttpGet("images")]
         public IActionResult GetImages()
         {

@@ -1,0 +1,92 @@
+﻿<div class="position-fixed p-3 @PositionClass" style="z-index: 1100;">
+    <div class="@CalloutCssClass shadow-lg rounded border border-2"
+         style="width: 22rem; display:@(Visible ? "block" : "none"); animation: fadein 0.3s ease;">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="d-flex align-items-center mb-2">
+                    <i class="@IconClass me-2 fs-5"></i>
+                    <strong>@Title</strong>
+                </div>
+                <p class="mb-1">@Message</p>
+            </div>
+            <button type="button" class="btn-close ms-3" aria-label="Sluiten" @onclick="Hide"></button>
+        </div>
+        <div class="text-end text-muted small">
+            @Timestamp
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public string Title { get; set; } = "Melding";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public int Duration { get; set; } = 3000;
+    [Parameter] public string Type { get; set; } = "info";
+    [Parameter] public string PositionHorizontal { get; set; } = "end"; // start, center, end
+    [Parameter] public string PositionVertical { get; set; } = "top"; // top, center, bottom
+
+    private bool Visible { get; set; }
+    private string Timestamp => DateTime.Now.ToString("HH:mm:ss");
+
+    private string CalloutCssClass => Type switch
+    {
+        "success" => "bg-success-subtle text-success-emphasis p-3",
+        "error" => "bg-danger-subtle text-danger-emphasis p-3",
+        "warning" => "bg-warning-subtle text-warning-emphasis p-3",
+        _ => "bg-primary-subtle text-primary-emphasis p-3"
+    };
+
+    private string IconClass => Type switch
+    {
+        "success" => "bi bi-check-circle-fill",
+        "error" => "bi bi-x-circle-fill",
+        "warning" => "bi bi-exclamation-triangle-fill",
+        _ => "bi bi-info-circle-fill"
+    };
+
+    private string PositionClass => $"{VerticalPositionCss} {HorizontalPositionCss}";
+
+    private string VerticalPositionCss => PositionVertical switch
+    {
+        "top" => "top-0",
+        "center" => "top-50 translate-middle-y",
+        _ => "bottom-0"
+    };
+
+    private string HorizontalPositionCss => PositionHorizontal switch
+    {
+        "start" => "start-0",
+        "center" => "start-50 translate-middle-x",
+        _ => "end-0"
+    };
+    /// <summary>
+    /// Toont een Bootstrap 5.3-stijl alert melding (callout).
+    /// </summary>
+    /// <param name="Title">De titel van de melding.</param>
+    /// <param name="Message">De hoofdinhoud van de melding.</param>
+    /// <param name="Type">Het type melding: "success", "error", "warning", of "info".</param>
+
+    public async Task Show(string title, string message, string type = "info")
+    {
+        Title = title;
+        Message = message;
+        Type = type;
+        Visible = true;
+
+        StateHasChanged();
+
+        if (Duration > 0)
+        {
+            await Task.Delay(Duration);
+            await Hide();
+        }
+    }
+
+    public Task Hide()
+    {
+        Visible = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

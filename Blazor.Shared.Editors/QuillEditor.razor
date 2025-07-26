@@ -39,7 +39,7 @@
         var urls = JsonSerializer.Deserialize<List<ImageFile>>(imageData.GetRawText());
         if (explorer != null)
         {
-            await explorer.ShowAsync(urls);
+            await explorer.ShowAsync(urls!);
             // eventueel imageUrls = urls;
         }
     }
