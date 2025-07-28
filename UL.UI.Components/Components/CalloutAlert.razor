@@ -1,4 +1,4 @@
-﻿<div class="position-fixed p-3 @PositionClass" style="z-index: 1100;">
+﻿<div class="position-fixed p-3 @PositionClass" style="z-index: 3000;">
     <div class="@CalloutCssClass shadow-lg rounded border border-2"
          style="width: 22rem; display:@(Visible ? "block" : "none"); animation: fadein 0.3s ease;">
         <div class="d-flex justify-content-between align-items-start">
@@ -8,8 +8,16 @@
                     <strong>@Title</strong>
                 </div>
                 <p class="mb-1">@Message</p>
+
+                @if (IsConfirmation)
+                {
+                    <div class="mt-3 text-end">
+                        <button type="button" class="btn btn-sm btn-secondary me-2" onclick="@(() => ConfirmResult(false)))">Annuleren</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="@(() => ConfirmResult(true))">OK</button>
+                    </div>
+                }
             </div>
-            <button type="button" class="btn-close ms-3" aria-label="Sluiten" @onclick="Hide"></button>
+            <button type="button" class="btn-close ms-3" aria-label="Sluiten" onclick="@Hide"></button>
         </div>
         <div class="text-end text-muted small">
             @Timestamp
@@ -17,17 +25,18 @@
     </div>
 </div>
 
-
 @code {
     [Parameter] public string Title { get; set; } = "Melding";
     [Parameter] public string Message { get; set; } = "";
     [Parameter] public int Duration { get; set; } = 3000;
     [Parameter] public string Type { get; set; } = "info";
-    [Parameter] public string PositionHorizontal { get; set; } = "end"; // start, center, end
-    [Parameter] public string PositionVertical { get; set; } = "top"; // top, center, bottom
+    [Parameter] public string PositionHorizontal { get; set; } = "end";
+    [Parameter] public string PositionVertical { get; set; } = "top";
 
     private bool Visible { get; set; }
     private string Timestamp => DateTime.Now.ToString("HH:mm:ss");
+    private bool IsConfirmation { get; set; } = false;
+    private TaskCompletionSource<bool>? ConfirmTcs;
 
     private string CalloutCssClass => Type switch
     {
@@ -60,20 +69,14 @@
         "center" => "start-50 translate-middle-x",
         _ => "end-0"
     };
-    /// <summary>
-    /// Toont een Bootstrap 5.3-stijl alert melding (callout).
-    /// </summary>
-    /// <param name="Title">De titel van de melding.</param>
-    /// <param name="Message">De hoofdinhoud van de melding.</param>
-    /// <param name="Type">Het type melding: "success", "error", "warning", of "info".</param>
 
     public async Task Show(string title, string message, string type = "info")
     {
         Title = title;
         Message = message;
         Type = type;
+        IsConfirmation = false;
         Visible = true;
-
         StateHasChanged();
 
         if (Duration > 0)
@@ -83,9 +86,28 @@
         }
     }
 
+    public Task<bool> ShowConfirm(string title, string message, string type = "warning")
+    {
+        Title = title;
+        Message = message;
+        Type = type;
+        IsConfirmation = true;
+        Visible = true;
+        ConfirmTcs = new TaskCompletionSource<bool>();
+        StateHasChanged();
+        return ConfirmTcs.Task;
+    }
+
+    private async void ConfirmResult(bool confirmed)
+    {
+        await Hide();
+        ConfirmTcs?.SetResult(confirmed);
+    }
+
     public Task Hide()
     {
         Visible = false;
+        IsConfirmation = false;
         StateHasChanged();
         return Task.CompletedTask;
     }

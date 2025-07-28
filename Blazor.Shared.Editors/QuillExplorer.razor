@@ -9,7 +9,8 @@
 @inject NavigationManager Navigation
 
 <ManualCopyModal @ref="manualCopyModalRef" OnClosed="HandleModalClosed" Message="Use the link below by selecting and copying it"  Title="Use this link"/>
-<BootstrapToast @ref="toast" />
+<BootstrapToast @ref="toast1" />
+<CalloutAlert @ref="calloutAlert" />
 
 @if (isOpen)
 {
@@ -55,7 +56,7 @@
                                           <td class="align-middle" style="font-size: 0.8rem;">@img.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
                                             <td class="align-middle">
 
-                                                <button class="btn btn-sm btn-outline-secondary" onclick="@(() => OpenManualCopyModal(img.Url!))"> <i class="bi bi-clipboard"></i> </button>
+                                                <button type="button"  class="btn btn-sm btn-outline-secondary" onclick="@(() => OpenManualCopyModal(img.Url!))"> <i class="bi bi-clipboard"></i> </button>
                                                 <button type="button"  class="btn btn-sm btn-danger" onclick="@(() => DeleteImage(img.FileName!))"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
@@ -80,23 +81,25 @@
 @code {
     [Parameter] public EventCallback<string> OnImageSelected { get; set; }
 
-    private BootstrapToast? toast;
+    private ManualCopyModal? manualCopyModalRef;
+     private BootstrapToast? toast1;
+    private CalloutAlert? calloutAlert;
 
     private List<ImageFile> imageUrls = [];
     private bool isOpen = false;
 
-    private ManualCopyModal? manualCopyModalRef;
 
 
-    
-        public Task ShowAsync(List<ImageFile> urls)
-        {
-            imageUrls = urls;
-            isOpen = true;
-            StateHasChanged();
-            return Task.CompletedTask;
-        }
-   
+
+
+    public Task ShowAsync(List<ImageFile> urls)
+    {
+        imageUrls = urls;
+        isOpen = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
 
     private async Task SelectImage(string url)
     {
@@ -125,30 +128,38 @@
 
     private async Task DeleteImage(string fileName)
     {
+        //bool confirmed = await calloutAlert!.ShowConfirm("Weet u het zeker?", $"Afbeelding '{fileName}' zal worden verwijderd.", "warning");
+
+
+
+
+
         bool success = await JSRuntime.InvokeAsync<bool>("quillBlazor.deleteImage", fileName);
-        if (toast is not null)
+        if (toast1 is not null)
         {
-            await toast.Show("DeleteItem", success ? "Deleted!" : "Failure Delete", success ? "success" : "error");
+            await toast1.Show("DeleteItem", success ? "Deleted!" : "Failure Delete", success ? "success" : "error");
         }
         Close();
     }
-    
+
     private string MakeAbsoluteUrl(string url)
     {
         return Navigation.BaseUri.TrimEnd('/') + url.Trim();
     }   
-    
-    
+
+
     private async Task OpenManualCopyModal(string url)
     {
+        Close();
         if (manualCopyModalRef is not null)
         {
             await manualCopyModalRef.Show(
                 Navigation.BaseUri.TrimEnd('/') + url.Trim(),
                 "The link has been automatically selected. Press Ctrl+C (Windows) or Cmd+C (Mac) to copy."
             );
+           
         }
-        Close();
+       ;
     }
 
     private void HandleModalClosed()
