@@ -50,7 +50,7 @@
                         <td>@artikel.PublicatieDatumTijd.ToString("dd-MM-yyyy")</td>
                         <td class="text-center">
                             <a href="/admin/news/edit/@artikel.Id" class="btn btn-sm btn-info me-2"><i class="bi bi-pencil-square"></i></a>
-                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(artikel.Id, artikel.Titel)"><i class="bi bi-trash3-fill"></i></button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => ShowDeleteConfirmation(artikel.Id, artikel.Titel!)"><i class="bi bi-trash3-fill"></i></button>
                         </td>
                     </tr>
                 }
@@ -59,9 +59,22 @@
     }
 </div>
 
+<ConfirmModal Title="Bevestig Verwijderen"
+              Message=@($"Weet je zeker dat je \"{ArtikelTitleToDelete}\" wilt verwijderen?")
+              OnConfirm="DeleteArtikel"
+              OnCancel="AnnuleerVerwijdering"
+              Show="ShowDeleteModal"
+              OnClose="() => ShowDeleteModal = false" />
+
+
 @code {
     private IEnumerable<NieuwsArtikelDto>? artikelen;
     private string adminLanguage = "nl"; // Admin taal kan ook via een user setting komen
+
+    private int ArtikelIdToDelete;
+    private string? ArtikelTitleToDelete;
+    private bool ShowDeleteModal = false;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,15 +83,25 @@
         artikelen = (await NieuwsService.GetNieuwsArtikelenPagedAsync(adminLanguage, 1, int.MaxValue)).Items;
     }
 
-    private async Task ConfirmDelete(int artikelId, string? artikelTitel)
+    private async Task DeleteArtikel()
     {
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Weet je zeker dat je \"{artikelTitel}\" wilt verwijderen?");
-        if (confirmed)
-        {
-            await NieuwsService.DeleteNieuwsArtikelAsync(artikelId);
-            // Herlaad de lijst na verwijdering
-            artikelen = (await NieuwsService.GetNieuwsArtikelenPagedAsync(adminLanguage, 1, int.MaxValue)).Items;
-            StateHasChanged(); // Forceer herrenderen
-        }
+        await NieuwsService.DeleteNieuwsArtikelAsync(ArtikelIdToDelete);
+        ShowDeleteModal = false;
+        artikelen = (await NieuwsService.GetNieuwsArtikelenPagedAsync(adminLanguage, 1, int.MaxValue)).Items;
+        StateHasChanged();
+    }
+
+
+    private void ShowDeleteConfirmation(int id, string title)
+    {
+        ArtikelIdToDelete = id;
+        ArtikelTitleToDelete = title;
+        ShowDeleteModal = true;
+    }
+    private void AnnuleerVerwijdering()
+    {
+        ShowDeleteModal = false;
+        ArtikelIdToDelete = 0;
+        ArtikelTitleToDelete = null;
     }
 }
