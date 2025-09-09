@@ -146,14 +146,14 @@
         return CurrentLanguage == "en" ? enString : nlString;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            string target = "_blank";
-            await JSRuntime.InvokeVoidAsync("initializeDiscoverySearch", target);
-        }
-    }
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         string target = "_blank";
+    //         await JSRuntime.InvokeVoidAsync("initializeDiscoverySearch",  target);
+    //     }
+    // }
 
     private string GetLanguageFullName(string langCode)
     {
