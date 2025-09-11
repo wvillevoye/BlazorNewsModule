@@ -18,9 +18,12 @@
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">@GetCurrentCultureString("Laatste Nieuws", "Latest News")</h2>
-        <div class="d-flex align-items-center">
-            <LanguageSwitcher CurrentLanguage="@CurrentLanguage" OnLanguageChanged="@HandleLanguageChanged" />
-        </div>
+        @if (LanguageSwitchShow)
+        {
+            <div class="d-flex align-items-center">
+                <LanguageSwitcher CurrentLanguage="@CurrentLanguage" OnLanguageChanged="@HandleLanguageChanged" />
+            </div>
+        }
     </div>
 
     @if (pagedResult == null)
@@ -93,6 +96,10 @@
 
     [Parameter]
     public int? PageNumber { get; set; }
+
+
+    [Parameter]
+    public bool LanguageSwitchShow { get; set; } = true;
     // private BootstrapToast toast;
     // private async Task ShowToast()
     // {
