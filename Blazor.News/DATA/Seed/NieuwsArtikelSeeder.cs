@@ -60,7 +60,7 @@ namespace Blazor.News.Data.Seed
 
                 if (i % 2 != 0)
                 {
-                    artikel.InterneLinks.Add(new NieuwsInternalLink { TekstNl = $"Meer over {randomCategory.NaamNl}", TekstEn = $"More about {randomCategory.NaamEn}", Url = $"https://example.com/{randomCategory.NaamEn.ToLower().Replace(" ", "-")}", NieuwsArtikel = artikel });
+                    artikel.InterneLinks.Add(new NieuwsInternalLink { TekstNl = $"Meer over {randomCategory.NaamNl}", TekstEn = $"More about {randomCategory.NaamEn}", Url = $"https://example.com/{randomCategory.NaamEn!.ToLower().Replace(" ", "-")}", NieuwsArtikel = artikel });
                 }
                 if (i % 3 == 0)
                 {

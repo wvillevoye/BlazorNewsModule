@@ -52,7 +52,9 @@
                                 </a>
                             </h5>
                             <p class="card-text text-muted mb-2">
-                                @(artikel.Ondertitel ?? (artikel.Inhoud != null && artikel.Inhoud.Length > 150 ? artikel.Inhoud.Substring(0, 150) + "..." : artikel.Inhoud))
+                                @((MarkupString)(artikel.Ondertitel ?? (artikel.Inhoud != null && artikel.Inhoud.Length > 150
+                                                        ? artikel.Inhoud.Substring(0, 150) + "..."
+                                                        : artikel.Inhoud ?? "")))
                             </p>
                             <small class="text-muted mt-auto">
                                 @(GetCurrentCultureString("Door", "By")) @artikel.Auteur @(GetCurrentCultureString("op", "on")) @artikel.PublicatieDatumTijd.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
